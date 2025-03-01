@@ -14,6 +14,7 @@ import (
 
 type model struct {
     board [][]rune
+    posX, posY int
 }
 
 type cell struct {
@@ -41,11 +42,16 @@ func initModel() model {
     }
 
     _board := make([][]rune, 15)
+    _x, _y := -1, -1
     min, max := 65, 90
     for i := range 15 {
         _board[i] = make([]rune, 15)
         for j := range 15 {
             if _, exists := blockedCell[cell{i, j}]; !exists {
+                if(_x == -1 && _y == -1) {
+                    _x = i;
+                    _y = j;
+                }
                 _board[i][j] = rune(rand.Intn(max - min + 1) + min)
             } else {
                 _board[i][j] = '$'
@@ -54,6 +60,8 @@ func initModel() model {
     }
     return model {
         board: _board,
+        posX: _x,
+        posY: _y,
     }
 }
 
@@ -67,6 +75,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
         switch msg.String() {
         case "q", "ctrl+c":
             return m, tea.Quit
+        case "up":
+            if(m.posX > 0) {
+                m.posX--;
+            }
+        case "down":
+            if(m.posX < 14) {
+                m.posX++;
+            }
+        case "left":
+            if(m.posY > 0) {
+                m.posY--;
+            }
+        case "right":
+            if(m.posY < 14) {
+                m.posY++;
+            }
         }
     }
     return m, nil
@@ -76,6 +100,10 @@ func (m model) View() string {
     boardStyle := lipgloss.NewStyle().
         Foreground(lipgloss.Color("0")).
         Background(lipgloss.Color("15"))
+
+    activeStyle := lipgloss.NewStyle().
+        Foreground(lipgloss.Color("0")).
+        Background(lipgloss.Color("105"))
 
     var s strings.Builder
     s.WriteString("\n\n\t")
@@ -90,6 +118,10 @@ func (m model) View() string {
         for j := range 15 {
             if m.board[i][j] == '$' {
                 s.WriteString(boardStyle.Render("┃") + "    ")
+            } else if (i == m.posX && j == m.posY) {
+                s.WriteString(
+                    boardStyle.Render("┃") +
+                    activeStyle.Render("  " + string(m.board[i][j]) + " "))
             } else {
                 s.WriteString(boardStyle.Render("┃  " + string(m.board[i][j]) + " "))
             }
